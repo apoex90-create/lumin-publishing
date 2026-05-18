@@ -1,0 +1,407 @@
+// Prisma schema for LUMIN Publishing - Autonomous Agent Edition
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  AUTHOR
+  ADMIN
+  READER
+}
+
+enum BookStatus {
+  DRAFT
+  SUBMITTED
+  IN_REVIEW
+  IN_EDITING
+  COVER_DESIGN
+  FORMATTING
+  PUBLISHED
+  REJECTED
+}
+
+enum PlanTier {
+  STARTER
+  PROFESSIONAL
+  BESTSELLER
+}
+
+enum AgentType {
+  ORCHESTRATOR
+  EDITOR
+  DESIGNER
+  FORMATTER
+  MARKETING
+  BLOGGER
+  SUPPORT
+  MAILER
+  ACCOUNTS
+  MAINTENANCE
+}
+
+enum AgentStatus {
+  ACTIVE
+  PAUSED
+  ERROR
+  DISABLED
+}
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  AWAITING_APPROVAL
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  fullName     String
+  role         Role     @default(AUTHOR)
+  bio          String?  @db.Text
+  avatarUrl    String?
+  phone        String?
+  country      String?  @default("IN")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  books        Book[]
+  transactions Transaction[]
+  approvals    Approval[]
+  emails       EmailLog[]
+}
+
+model Book {
+  id            String     @id @default(cuid())
+  title         String
+  subtitle      String?
+  genre         String
+  language      String     @default("English")
+  description   String     @db.Text
+  manuscriptUrl String?
+  coverUrl      String?
+  isbn          String?
+  pageCount     Int?
+  priceINR      Float?
+  priceUSD      Float?
+  status        BookStatus @default(DRAFT)
+  planTier      PlanTier   @default(STARTER)
+  publishedAt   DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  editedManuscriptUrl String?
+  editorNotes         String? @db.Text
+  marketingCopy       String? @db.Text
+  socialPosts         String? @db.Text
+  coverVariants       String? @db.Text
+
+  authorId     String
+  author       User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  sales        Sale[]
+  jobs         Job[]
+
+  @@index([authorId])
+  @@index([status])
+}
+
+model Sale {
+  id         String   @id @default(cuid())
+  bookId     String
+  book       Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  amount     Float
+  currency   String   @default("INR")
+  buyerEmail String?
+  channel    String   @default("direct")
+  createdAt  DateTime @default(now())
+
+  @@index([bookId])
+}
+
+model Transaction {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  amount    Float
+  currency  String   @default("INR")
+  status    String   @default("completed")
+  reference String?
+  createdAt DateTime @default(now())
+
+  approvalId String?    @unique
+  approval   Approval?  @relation(fields: [approvalId], references: [id])
+
+  @@index([userId])
+}
+
+model Agent {
+  id           String      @id @default(cuid())
+  type         AgentType   @unique
+  name         String
+  description  String      @db.Text
+  status       AgentStatus @default(ACTIVE)
+  config       String      @db.Text
+  lastRunAt    DateTime?
+  totalRuns    Int         @default(0)
+  totalErrors  Int         @default(0)
+  totalCostINR Float       @default(0)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  jobs Job[]
+  logs AgentLog[]
+}
+
+model Job {
+  id          String    @id @default(cuid())
+  agentId     String
+  agent       Agent     @relation(fields: [agentId], references: [id])
+  bookId      String?
+  book        Book?     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  type        String
+  status      JobStatus @default(QUEUED)
+  priority    Int       @default(5)
+  payload     String    @db.Text
+  result      String?   @db.Text
+  errorMsg    String?   @db.Text
+  attempts    Int       @default(0)
+  scheduledAt DateTime  @default(now())
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  approvalId String?   @unique
+  approval   Approval? @relation(fields: [approvalId], references: [id])
+
+  @@index([status, scheduledAt])
+  @@index([agentId])
+  @@index([bookId])
+}
+
+model AgentLog {
+  id        String   @id @default(cuid())
+  agentId   String
+  agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  level     String   @default("info")
+  message   String   @db.Text
+  metadata  String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([agentId, createdAt])
+}
+
+model Approval {
+  id             String         @id @default(cuid())
+  type           String
+  title          String
+  description    String         @db.Text
+  amount         Float?
+  currency       String?        @default("INR")
+  status         ApprovalStatus @default(PENDING)
+  requesterAgent String?
+  approvedById   String?
+  approvedBy     User?          @relation(fields: [approvedById], references: [id])
+  approvedAt     DateTime?
+  rejectedReason String?        @db.Text
+  metadata       String?        @db.Text
+
+  transaction Transaction?
+  job         Job?
+  createdAt   DateTime @default(now())
+
+  @@index([status, createdAt])
+}
+
+model BlogPost {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  excerpt     String   @db.Text
+  content     String   @db.Text
+  coverUrl    String?
+  category    String   @default("Writing Tips")
+  tags        String?
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  authorBot   String   @default("BLOGGER")
+
+  @@index([publishedAt])
+}
+
+model EmailLog {
+  id        String    @id @default(cuid())
+  userId    String?
+  user      User?     @relation(fields: [userId], references: [id])
+  toEmail   String
+  subject   String
+  body      String    @db.Text
+  template  String?
+  status    String    @default("queued")
+  sentAt    DateTime?
+  error     String?   @db.Text
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([status])
+}
+
+model SupportThread {
+  id        String   @id @default(cuid())
+  subject   String
+  userEmail String
+  status    String   @default("open")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages SupportMessage[]
+
+  @@index([status])
+}
+
+model SupportMessage {
+  id        String        @id @default(cuid())
+  threadId  String
+  thread    SupportThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  sender    String
+  body      String        @db.Text
+  createdAt DateTime      @default(now())
+
+  @@index([threadId])
+}
+
+model SiteSetting {
+  key       String   @id
+  value     String   @db.Text
+  type      String   @default("string")
+  updatedAt DateTime @updatedAt
+}
+
+// === EDITABLE CONTENT (managed via admin panel) ===
+
+model Testimonial {
+  id          String   @id @default(cuid())
+  quote       String   @db.Text
+  authorName  String
+  authorRole  String?
+  imageUrl    String?
+  rating      Int      @default(5)
+  isFeatured  Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TeamMember {
+  id          String   @id @default(cuid())
+  name        String
+  role        String
+  bio         String?  @db.Text
+  imageUrl    String?
+  email       String?
+  linkedinUrl String?
+  twitterUrl  String?
+  sortOrder   Int      @default(0)
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Faq {
+  id          String   @id @default(cuid())
+  question    String   @db.Text
+  answer      String   @db.Text
+  category    String   @default("General")
+  sortOrder   Int      @default(0)
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model FooterLink {
+  id          String   @id @default(cuid())
+  section     String   // 'Publish' | 'Discover' | 'Company' | 'Legal'
+  label       String
+  url         String
+  isExternal  Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([section])
+}
+
+model SocialLink {
+  id          String   @id @default(cuid())
+  platform    String   // 'twitter' | 'instagram' | 'facebook' | 'youtube' | 'email'
+  url         String
+  isPublished Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  updatedAt   DateTime @updatedAt
+}
+
+model Plan {
+  id             String   @id @default(cuid())
+  tier           String   @unique // 'STARTER' | 'PROFESSIONAL' | 'BESTSELLER'
+  name           String
+  tagline        String
+  priceINR       Float
+  priceUSD       Float
+  royaltyPercent Int
+  features       String   @db.Text  // JSON array of strings
+  isPopular      Boolean  @default(false)
+  sortOrder      Int      @default(0)
+  isPublished    Boolean  @default(true)
+  updatedAt      DateTime @updatedAt
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @db.Text
+  features    String   @db.Text  // JSON array
+  iconName    String   @default("Sparkles")
+  colorClass  String   @default("from-royal-700 to-royal-900")
+  sortOrder   Int      @default(0)
+  isPublished Boolean  @default(true)
+  updatedAt   DateTime @updatedAt
+}
+
+model HowItWorksStep {
+  id          String   @id @default(cuid())
+  stepNumber  Int
+  title       String
+  text        String   @db.Text
+  detail      String?  @db.Text
+  iconName    String   @default("Sparkles")
+  sortOrder   Int      @default(0)
+  isPublished Boolean  @default(true)
+  updatedAt   DateTime @updatedAt
+}
+
+model PageContent {
+  id          String   @id @default(cuid())
+  pageSlug    String   @unique // 'home' | 'about' | 'contact' | etc.
+  title       String?
+  content     String   @db.Text  // JSON of all editable fields for this page
+  updatedAt   DateTime @updatedAt
+}

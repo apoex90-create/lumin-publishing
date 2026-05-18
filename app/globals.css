@@ -1,0 +1,144 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --royal-deep: #1f1547;
+    --royal-mid: #3d298d;
+    --gold: #d4a017;
+    --gold-light: #eec85e;
+    --burgundy: #871f2d;
+    --cream: #faf6ec;
+    --ink: #1a1625;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    @apply bg-cream-50 text-ink-950 font-sans;
+    background-image:
+      radial-gradient(at 0% 0%, rgba(212, 160, 23, 0.04) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(76, 51, 176, 0.04) 0px, transparent 50%);
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4, h5 {
+    @apply font-display tracking-tight;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: #faf6ec; }
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #3d298d, #1f1547);
+    border-radius: 10px;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: #1f1547; }
+
+  ::selection { background: #eec85e; color: #1f1547; }
+}
+
+@layer components {
+  /* Gold gradient text */
+  .text-gold-gradient {
+    background: linear-gradient(135deg, #d4a017 0%, #eec85e 50%, #d4a017 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-size: 200% auto;
+    animation: shimmer 4s linear infinite;
+  }
+
+  /* Royal button */
+  .btn-royal {
+    @apply relative inline-flex items-center justify-center px-8 py-4 font-sans font-semibold tracking-wide
+           bg-gradient-to-br from-royal-700 via-royal-800 to-royal-900
+           text-cream-50 rounded-full overflow-hidden
+           shadow-royal transition-all duration-300
+           hover:shadow-gold-glow hover:scale-[1.02];
+  }
+
+  .btn-royal::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-transparent via-gold-400/20 to-transparent
+           -translate-x-full transition-transform duration-700;
+  }
+
+  .btn-royal:hover::before { @apply translate-x-full; }
+
+  /* Gold button */
+  .btn-gold {
+    @apply relative inline-flex items-center justify-center px-8 py-4 font-sans font-semibold tracking-wide
+           bg-gradient-to-br from-gold-400 to-gold-600
+           text-royal-900 rounded-full
+           shadow-lg transition-all duration-300
+           hover:shadow-gold-glow hover:scale-[1.02];
+  }
+
+  /* Outline button */
+  .btn-outline {
+    @apply inline-flex items-center justify-center px-8 py-4 font-sans font-medium tracking-wide
+           border-2 border-royal-800 text-royal-800 rounded-full
+           hover:bg-royal-800 hover:text-cream-50
+           transition-all duration-300;
+  }
+
+  /* Premium card */
+  .card-premium {
+    @apply relative bg-cream-50/80 backdrop-blur-sm rounded-3xl
+           border border-royal-100
+           shadow-[0_8px_30px_-12px_rgba(31,21,71,0.15)]
+           transition-all duration-500;
+  }
+
+  .card-premium:hover {
+    @apply shadow-[0_20px_60px_-15px_rgba(31,21,71,0.3)] -translate-y-1;
+  }
+
+  /* Ornamental divider */
+  .divider-ornate {
+    @apply flex items-center justify-center gap-4 my-12;
+  }
+  .divider-ornate::before,
+  .divider-ornate::after {
+    content: '';
+    @apply h-px flex-1 bg-gradient-to-r from-transparent via-gold-500 to-transparent max-w-[200px];
+  }
+
+  /* Section padding */
+  .section-pad { @apply py-20 md:py-28 lg:py-32; }
+
+  /* Container */
+  .container-lumin { @apply max-w-7xl mx-auto px-6 lg:px-12; }
+
+  /* Eyebrow text */
+  .eyebrow {
+    @apply inline-block text-xs font-sans font-semibold tracking-[0.25em] uppercase
+           text-gold-600 mb-4;
+  }
+
+  /* Display heading */
+  .h-display {
+    @apply font-display text-5xl md:text-6xl lg:text-7xl font-light leading-[1.05] tracking-tight;
+  }
+
+  /* Floating decorative element */
+  .floating-orb {
+    @apply absolute rounded-full blur-3xl opacity-30 pointer-events-none;
+  }
+}
+
+/* Stagger animations on load */
+.stagger-children > * { opacity: 0; animation: fadeUp 0.8s ease-out forwards; }
+.stagger-children > *:nth-child(1) { animation-delay: 0.1s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.2s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.3s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.4s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.5s; }
+.stagger-children > *:nth-child(6) { animation-delay: 0.6s; }
