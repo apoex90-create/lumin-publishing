@@ -64,7 +64,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: err.message || 'Upload failed' }, { status: 500 });
   }
 }
-
-export const config = {
-  api: { bodyParser: false },
-};
+  } catch (err: any) {
+    console.error('Upload error:', err);
+    return NextResponse.json({ error: err.message || 'Upload failed' }, { status: 500 });
+  }
+}
