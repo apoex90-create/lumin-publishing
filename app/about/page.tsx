@@ -158,7 +158,7 @@ export default async function AboutPage() {
 }
 
 export async function generateMetadata() {
-  const settings = await getSettings(['brand.name', 'seo.title']).catch(() => ({}));
+  const settings = await getSettings(['brand.name', 'seo.title']).catch(() => ({} as Record<string, string>));
   const brand = settings['brand.name'] || 'LUMIN';
   return {
     title: `About ${brand} — Built for Storytellers`,
