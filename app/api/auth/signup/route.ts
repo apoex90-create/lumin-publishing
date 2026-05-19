@@ -6,6 +6,7 @@ import { z } from 'zod';
 const signupSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email'),
+  phone: z.string().min(7, 'Phone number is required').max(20),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   country: z.string().optional(),
 });
@@ -26,6 +27,7 @@ export async function POST(req: NextRequest) {
         email: data.email,
         passwordHash,
         fullName: data.fullName,
+        phone: data.phone,
         country: data.country || 'IN',
         role: 'AUTHOR',
       },

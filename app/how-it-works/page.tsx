@@ -44,7 +44,7 @@ const steps = [
     icon: Megaphone,
     title: 'Launch & Marketing',
     text: 'AI-generated social posts, ad copy, and book trailers. Professional and Bestseller plans include paid ad campaigns and outreach to book bloggers, podcasts, and press.',
-    detail: 'You retain full ownership of your work and 70–80% of royalties — always.',
+    detail: 'You retain full ownership of your work — always.',
   },
 ];
 

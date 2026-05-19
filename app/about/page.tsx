@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 const values = [
   { icon: Heart, title: 'Author-First', text: "We exist to serve writers. Every product decision is filtered through one question: does this help authors succeed?" },
   { icon: Award, title: 'Craft over Speed', text: "AI makes us fast, but craft makes us proud. We refuse to publish anything that doesn't honor the work behind it." },
-  { icon: Users, title: 'Radical Transparency', text: "Open pricing. Open royalties. Open rights. No hidden clauses, no fine print, no surprises." },
+  { icon: Users, title: 'Radical Transparency', text: "Open pricing. Open process. Open rights. No hidden clauses, no fine print, no surprises." },
   { icon: Globe, title: 'Global Reach, Local Care', text: "We publish for the world but understand each author's context — especially writers in India and emerging markets often overlooked." },
 ];
 

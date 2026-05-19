@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { BookOpen, TrendingUp, DollarSign, Eye, Plus, ArrowRight } from 'lucide-react';
 import { prisma } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
@@ -14,9 +15,16 @@ const statusColors: Record<string, string> = {
   REJECTED: 'bg-burgundy-100 text-burgundy-700',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function DashboardPage() {
   const user = await getCurrentUser();
   if (!user) return null;
+
+  // First-time user: send to welcome page
+  if (!user.onboardingCompleted) {
+    redirect('/dashboard/welcome');
+  }
 
   const books = await prisma.book.findMany({
     where: { authorId: user.id },

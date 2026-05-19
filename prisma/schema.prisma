@@ -76,7 +76,20 @@ model User {
   bio          String?  @db.Text
   avatarUrl    String?
   phone        String?
+  phoneVerified Boolean @default(false)
   country      String?  @default("IN")
+
+  // Onboarding
+  onboardingCompleted Boolean @default(false)
+
+  // Payout details (stored encrypted in production)
+  payoutMethod    String?  // 'UPI' | 'BANK'
+  payoutUpi       String?
+  payoutBankName  String?
+  payoutBankAccount String?
+  payoutBankIfsc  String?
+  payoutPanNumber String?
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -104,6 +117,18 @@ model Book {
   publishedAt   DateTime?
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
+
+  // Publishing metadata
+  publisher       String?   // e.g. "INDU BOOK SERVICES PVT LTD"
+  publicationYear Int?
+  coAuthors       String?   // comma-separated
+  editorName      String?
+
+  // ISBN application
+  isbnRequested    Boolean   @default(false)
+  isbnRequestedAt  DateTime?
+  isbnDeclarationAccepted Boolean @default(false)
+  isbnFormat       String?   // 'PRINT' | 'EBOOK' | 'BOTH'
 
   editedManuscriptUrl String?
   editorNotes         String? @db.Text
@@ -366,7 +391,7 @@ model Plan {
   tagline        String
   priceINR       Float
   priceUSD       Float
-  royaltyPercent Int
+  royaltyPercent Int?     // Deprecated: no longer shown; kept for backward compat
   features       String   @db.Text  // JSON array of strings
   isPopular      Boolean  @default(false)
   sortOrder      Int      @default(0)

@@ -21,7 +21,7 @@ export default function EarningsPage() {
       <div className="mb-10">
         <p className="eyebrow">Royalties</p>
         <h2 className="font-display text-4xl text-royal-900">Earnings</h2>
-        <p className="text-ink-900/60 mt-2">Track your royalty income and manage payouts.</p>
+        <p className="text-ink-900/60 mt-2">Track your book sales and manage payout details.</p>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6 mb-10">

@@ -65,7 +65,7 @@ export default async function AdminContentPage() {
     },
     {
       title: 'Pricing Plans',
-      desc: 'Plan names, prices, features, royalty %',
+      desc: 'Plan names, prices, features',
       href: '/admin/content/plans',
       icon: CreditCard,
       stat: `${plans} plans`,

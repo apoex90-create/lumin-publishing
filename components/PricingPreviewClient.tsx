@@ -20,7 +20,7 @@ export default function PricingPreviewClient({ plans }: { plans: Plan[] }) {
         <SectionHeading
           eyebrow="Publishing Plans"
           title={<>Choose your <em className="italic text-gold-gradient">path to print</em></>}
-          description="Transparent pricing. No hidden fees. Authors keep the majority of royalties — always."
+          description="Transparent one-time pricing. No subscriptions, no hidden fees. Pay only when your book is approved."
           light
         />
 
@@ -52,7 +52,7 @@ export default function PricingPreviewClient({ plans }: { plans: Plan[] }) {
                   </span>
                 </div>
                 <p className="text-xs text-cream-100/50 mt-2 tracking-wider uppercase">
-                  One-time • {plan.royaltyPercent}% royalty
+                  One-time payment
                 </p>
               </div>
 

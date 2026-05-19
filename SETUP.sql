@@ -1,10 +1,9 @@
 -- ============================================
--- LUMIN PUBLISHING — Full database setup
--- Paste this entire file into Neon SQL Editor
--- Safe to run on a fresh database
+-- LUMIN PUBLISHING — Full database setup (v2)
+-- Includes all new fields: phone verification, payouts,
+-- onboarding, publisher, ISBN application fields
 -- ============================================
 
--- Drop existing types if they exist (for clean re-runs)
 DROP TYPE IF EXISTS "Role" CASCADE;
 DROP TYPE IF EXISTS "BookStatus" CASCADE;
 DROP TYPE IF EXISTS "PlanTier" CASCADE;
@@ -21,7 +20,6 @@ CREATE TYPE "AgentStatus" AS ENUM ('ACTIVE', 'PAUSED', 'ERROR', 'DISABLED');
 CREATE TYPE "JobStatus" AS ENUM ('QUEUED', 'RUNNING', 'AWAITING_APPROVAL', 'COMPLETED', 'FAILED', 'CANCELLED');
 CREATE TYPE "ApprovalStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
 
--- Drop existing tables (clean slate)
 DROP TABLE IF EXISTS "SupportMessage" CASCADE;
 DROP TABLE IF EXISTS "SupportThread" CASCADE;
 DROP TABLE IF EXISTS "EmailLog" CASCADE;
@@ -45,7 +43,6 @@ DROP TABLE IF EXISTS "HowItWorksStep" CASCADE;
 DROP TABLE IF EXISTS "PageContent" CASCADE;
 DROP TABLE IF EXISTS "SiteSetting" CASCADE;
 
--- Core tables
 CREATE TABLE "User" (
   id TEXT PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
@@ -55,7 +52,15 @@ CREATE TABLE "User" (
   bio TEXT,
   "avatarUrl" TEXT,
   phone TEXT,
+  "phoneVerified" BOOLEAN DEFAULT FALSE,
   country TEXT DEFAULT 'IN',
+  "onboardingCompleted" BOOLEAN DEFAULT FALSE,
+  "payoutMethod" TEXT,
+  "payoutUpi" TEXT,
+  "payoutBankName" TEXT,
+  "payoutBankAccount" TEXT,
+  "payoutBankIfsc" TEXT,
+  "payoutPanNumber" TEXT,
   "createdAt" TIMESTAMP DEFAULT NOW(),
   "updatedAt" TIMESTAMP DEFAULT NOW()
 );
@@ -78,6 +83,14 @@ CREATE TABLE "Book" (
   "publishedAt" TIMESTAMP,
   "createdAt" TIMESTAMP DEFAULT NOW(),
   "updatedAt" TIMESTAMP DEFAULT NOW(),
+  publisher TEXT,
+  "publicationYear" INTEGER,
+  "coAuthors" TEXT,
+  "editorName" TEXT,
+  "isbnRequested" BOOLEAN DEFAULT FALSE,
+  "isbnRequestedAt" TIMESTAMP,
+  "isbnDeclarationAccepted" BOOLEAN DEFAULT FALSE,
+  "isbnFormat" TEXT,
   "editedManuscriptUrl" TEXT,
   "editorNotes" TEXT,
   "marketingCopy" TEXT,
@@ -218,7 +231,6 @@ CREATE TABLE "SiteSetting" (
   "updatedAt" TIMESTAMP DEFAULT NOW()
 );
 
--- Editable content tables
 CREATE TABLE "Testimonial" (
   id TEXT PRIMARY KEY,
   quote TEXT NOT NULL,
@@ -287,7 +299,7 @@ CREATE TABLE "Plan" (
   tagline TEXT NOT NULL,
   "priceINR" DOUBLE PRECISION NOT NULL,
   "priceUSD" DOUBLE PRECISION NOT NULL,
-  "royaltyPercent" INTEGER NOT NULL,
+  "royaltyPercent" INTEGER,
   features TEXT NOT NULL,
   "isPopular" BOOLEAN DEFAULT FALSE,
   "sortOrder" INTEGER DEFAULT 0,
@@ -327,16 +339,11 @@ CREATE TABLE "PageContent" (
   "updatedAt" TIMESTAMP DEFAULT NOW()
 );
 
--- ============================================
--- SEED DATA — only essentials, no fake content
--- ============================================
+-- Admin user (password "demo1234" — CHANGE AFTER FIRST LOGIN)
+INSERT INTO "User" (id, email, "passwordHash", "fullName", role, country, "onboardingCompleted") VALUES
+  ('admin-001', 'admin@lumin.demo', '$2b$10$rXOyGYTPzkXC.YYO5xZh3.K0yJLpaxQqHzKxV3FxLvL9pXZ8KwGEa', 'Platform Admin', 'ADMIN', 'IN', TRUE);
 
--- 1) Admin user (password "demo1234")
--- IMPORTANT: Change this password after first login!
-INSERT INTO "User" (id, email, "passwordHash", "fullName", role, country) VALUES
-  ('admin-001', 'admin@lumin.demo', '$2b$10$rXOyGYTPzkXC.YYO5xZh3.K0yJLpaxQqHzKxV3FxLvL9pXZ8KwGEa', 'Platform Admin', 'ADMIN', 'IN');
-
--- 2) All 10 agents (autonomous bots)
+-- All 10 agents
 INSERT INTO "Agent" (id, type, name, description, config) VALUES
   ('agent-1', 'ORCHESTRATOR', '🎯 Manager', 'Routes work to all other agents.', '{}'),
   ('agent-2', 'EDITOR', '✏️ Editorial Bot', 'Edits manuscripts. Grammar, style, structure.', '{}'),
@@ -349,28 +356,28 @@ INSERT INTO "Agent" (id, type, name, description, config) VALUES
   ('agent-9', 'ACCOUNTS', '💰 Accounts Bot', 'Money flow. All transactions need admin approval.', '{}'),
   ('agent-10', 'MAINTENANCE', '🌐 Maintenance Bot', 'Site health, backups, monitoring.', '{}');
 
--- 3) Default pricing plans (you can edit these in admin)
-INSERT INTO "Plan" (id, tier, name, tagline, "priceINR", "priceUSD", "royaltyPercent", features, "isPopular", "sortOrder") VALUES
-  ('plan-1', 'STARTER', 'Starter', 'For first-time authors', 4999, 59, 70,
-    '["AI-assisted grammar & style edit","3 AI-generated cover options","EPUB + PDF formatting","Listed on our bookstore","Basic author profile page","Sales dashboard & analytics","70% royalty to author"]',
+-- Default pricing plans (no royalty)
+INSERT INTO "Plan" (id, tier, name, tagline, "priceINR", "priceUSD", features, "isPopular", "sortOrder") VALUES
+  ('plan-1', 'STARTER', 'Starter', 'For first-time authors', 4999, 59,
+    '["AI-assisted grammar & style edit","3 AI-generated cover options","EPUB + PDF formatting","Listed on our bookstore","Basic author profile page","Sales dashboard & analytics"]',
     FALSE, 1),
-  ('plan-2', 'PROFESSIONAL', 'Professional', 'Our most popular plan', 14999, 179, 75,
-    '["Everything in Starter, plus:","Advanced AI edit + 1 human proofread","10 AI covers + 1 custom revision","Print-ready PDF (paperback)","ISBN included","Amazon KDP distribution","AI marketing kit (social + ad copy)","75% royalty to author"]',
+  ('plan-2', 'PROFESSIONAL', 'Professional', 'Our most popular plan', 14999, 179,
+    '["Everything in Starter, plus:","Advanced AI edit + 1 human proofread","10 AI covers + 1 custom revision","Print-ready PDF (paperback)","ISBN included","Amazon KDP distribution","AI marketing kit (social + ad copy)"]',
     TRUE, 2),
-  ('plan-3', 'BESTSELLER', 'Bestseller', 'Full premium publishing', 39999, 479, 80,
-    '["Everything in Professional, plus:","Full human edit (multiple rounds)","Custom cover by designer","Hardcover + paperback + ebook","ISBN + barcode + DOI","Global distribution (Amazon, Apple, Google, IngramSpark)","Book launch campaign","Dedicated author website page","80% royalty to author"]',
+  ('plan-3', 'BESTSELLER', 'Bestseller', 'Full premium publishing', 39999, 479,
+    '["Everything in Professional, plus:","Full human edit (multiple rounds)","Custom cover by designer","Hardcover + paperback + ebook","ISBN + barcode + DOI","Global distribution","Book launch campaign"]',
     FALSE, 3);
 
--- 4) Default How It Works steps (you can edit in admin)
+-- Default How It Works steps
 INSERT INTO "HowItWorksStep" (id, "stepNumber", title, text, detail, "iconName") VALUES
-  ('step-1', 1, 'Submit Your Manuscript', 'Upload your work in any common format — .docx, .pdf, .txt, or .rtf.', 'Your manuscript is encrypted at rest.', 'Upload'),
-  ('step-2', 2, 'AI-Assisted Editorial Review', 'Our AI editor identifies grammar issues, pacing, and style inconsistencies — while preserving your voice.', 'You approve every change before it goes into the final manuscript.', 'Sparkles'),
-  ('step-3', 3, 'Cover & Interior Design', 'Choose from six design directions. Our AI generates options, refined to perfection.', 'Bestseller plan includes a fully custom cover by an award-winning designer.', 'Palette'),
-  ('step-4', 4, 'Formatting & ISBN', 'EPUB for ebooks, print-ready PDF for paperback and hardcover. ISBN registration included.', 'Files are delivered to all major retailers within 48 hours.', 'FileCheck'),
-  ('step-5', 5, 'Global Distribution', 'Your book goes live on Amazon, Apple Books, Google Play, Kobo, and more.', 'Reach readers in over 180 countries.', 'Globe'),
-  ('step-6', 6, 'Launch & Marketing', 'AI-generated social posts, ad copy, and book trailers.', 'You retain full ownership of your work and 70–80% of royalties — always.', 'Megaphone');
+  ('step-1', 1, 'Submit Your Manuscript', 'Upload your work in any common format.', 'Encrypted and secure.', 'Upload'),
+  ('step-2', 2, 'AI-Assisted Editing', 'Our AI editor polishes grammar, style, and pacing.', 'You approve every change.', 'Sparkles'),
+  ('step-3', 3, 'Cover & Interior Design', 'Six design directions; refined to perfection.', 'Bestseller plan: fully custom cover.', 'Palette'),
+  ('step-4', 4, 'Formatting & ISBN', 'EPUB, print-ready PDF, ISBN registration.', 'Delivered to all major retailers within 48 hours.', 'FileCheck'),
+  ('step-5', 5, 'Global Distribution', 'Live on Amazon, Apple Books, Google Play, Kobo.', '180+ countries.', 'Globe'),
+  ('step-6', 6, 'Launch & Marketing', 'AI-generated social posts, ad copy, book trailers.', 'You retain full ownership of your work.', 'Megaphone');
 
--- 5) Default footer links — NO 404s, all point to real pages
+-- Default footer links — NO 404s
 INSERT INTO "FooterLink" (id, section, label, url, "sortOrder") VALUES
   ('fl-1',  'Publish',  'How It Works',    '/how-it-works', 1),
   ('fl-2',  'Publish',  'Pricing',          '/pricing',      2),
@@ -386,7 +393,7 @@ INSERT INTO "FooterLink" (id, section, label, url, "sortOrder") VALUES
   ('fl-12', 'Legal',    'Refund Policy',    '/refund',       3),
   ('fl-13', 'Legal',    'Copyright / DMCA', '/copyright',    4);
 
--- 6) Default site settings
+-- Default site settings
 INSERT INTO "SiteSetting" (key, value, type) VALUES
   ('brand.name', 'LUMIN', 'string'),
   ('brand.tagline', 'Where extraordinary stories become beautifully published books', 'string'),
@@ -407,8 +414,8 @@ INSERT INTO "SiteSetting" (key, value, type) VALUES
   ('stats.2.label', 'Countries Reached', 'string'),
   ('stats.3.number', '7 days', 'string'),
   ('stats.3.label', 'Average Time to Publish', 'string'),
-  ('stats.4.number', '80%', 'string'),
-  ('stats.4.label', 'Royalty to Authors', 'string'),
+  ('stats.4.number', '100%', 'string'),
+  ('stats.4.label', 'Author Rights Retained', 'string'),
   ('seo.title', 'LUMIN — Premium AI-Powered Book Publishing', 'string'),
   ('seo.description', 'Publish your book in days, not years. AI-assisted editing, premium design, and global distribution.', 'string'),
   ('seo.keywords', 'book publishing, AI publishing, self publishing, ebook, ISBN, author platform', 'string'),
@@ -418,8 +425,7 @@ INSERT INTO "SiteSetting" (key, value, type) VALUES
   ('show.stats', 'false', 'boolean'),
   ('show.social.icons', 'false', 'boolean'),
   ('about.mission.title', 'Every author deserves a beautiful book.', 'string'),
-  ('about.mission.text', 'We believe the gatekeeping era of publishing is over — but most "self-publishing" tools have failed authors by giving them software when they needed partnership. LUMIN blends the precision of AI with the judgment of craft.', 'string');
+  ('about.mission.text', 'We believe the gatekeeping era of publishing is over. We blend AI precision with the judgment of craft.', 'string');
 
 -- DONE!
--- Login: admin@lumin.demo / demo1234
--- After login: go to /admin and start configuring your site.
+-- Login: admin@lumin.demo / demo1234 — CHANGE PASSWORD ON FIRST LOGIN

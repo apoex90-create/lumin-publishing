@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, ChevronRight, ChevronLeft, Upload, Sparkles, Image, DollarSign, Eye, Loader2, BookOpen, Crown } from 'lucide-react';
+import { Check, ChevronRight, ChevronLeft, Upload, Sparkles, Image, DollarSign, Eye, Loader2, BookOpen, Crown, CreditCard } from 'lucide-react';
 import { GENRES, LANGUAGES, PLANS, formatPrice } from '@/lib/plans';
 import { useCurrency } from '@/lib/currency-context';
+import { PUBLISHERS } from '@/lib/publishers';
+import FileUpload from '@/components/ui/FileUpload';
 
 const STEPS = [
   { id: 1, title: 'Book Details', icon: BookOpen },
@@ -39,6 +41,8 @@ export default function UploadWizard() {
     description: '',
     manuscriptFile: null as File | null,
     manuscriptName: '',
+    manuscriptUrl: '' as string,
+    publisher: '',
     planTier: 'PROFESSIONAL' as 'STARTER' | 'PROFESSIONAL' | 'BESTSELLER',
     coverStyle: 'cinematic',
     coverPrompt: '',
@@ -62,6 +66,8 @@ export default function UploadWizard() {
           genre: data.genre,
           language: data.language,
           description: data.description,
+          publisher: data.publisher,
+          manuscriptUrl: data.manuscriptUrl,
           planTier: data.planTier,
           priceINR: data.priceINR,
           priceUSD: data.priceUSD,
@@ -69,7 +75,8 @@ export default function UploadWizard() {
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || 'Failed to submit');
-      router.push('/dashboard/books');
+      // Go to payment page for this book
+      router.push(`/dashboard/books/${result.bookId}/pay`);
       router.refresh();
     } catch (err: any) {
       setError(err.message);
@@ -80,7 +87,7 @@ export default function UploadWizard() {
   function canProceed() {
     switch (step) {
       case 1: return data.title && data.genre && data.description.length >= 10;
-      case 2: return data.manuscriptName !== '';
+      case 2: return data.manuscriptUrl !== '';
       case 3: return data.planTier !== null;
       case 4: return data.coverStyle !== '';
       case 5: return data.priceINR > 0 && data.priceUSD > 0;
@@ -220,6 +227,23 @@ export default function UploadWizard() {
                     <span className="text-xs text-ink-900/40">{data.description.length} / 1000</span>
                   </div>
                 </div>
+
+                <div>
+                  <label className="block text-xs font-semibold tracking-widest uppercase text-royal-800 mb-2">
+                    Preferred Publisher Imprint
+                  </label>
+                  <select
+                    value={data.publisher}
+                    onChange={(e) => setData({ ...data, publisher: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl bg-cream-50 border border-royal-200 focus:border-gold-500 outline-none"
+                  >
+                    <option value="">Select a publisher (optional, can change later)</option>
+                    {PUBLISHERS.filter(p => p.isActive).map((p) => (
+                      <option key={p.id} value={p.name}>{p.name}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-ink-900/40 mt-1">Your book will be published under this imprint. Required for ISBN application.</p>
+                </div>
               </div>
             </div>
           )}
@@ -233,35 +257,24 @@ export default function UploadWizard() {
                 <p className="text-ink-900/60 mt-2">We accept .docx, .pdf, .txt, and .rtf. Maximum 50MB.</p>
               </div>
 
-              <label className="block">
-                <input
-                  type="file"
-                  accept=".docx,.pdf,.txt,.rtf"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) setData({ ...data, manuscriptFile: file, manuscriptName: file.name });
-                  }}
-                />
-                <div className={`border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all ${
-                  data.manuscriptName
-                    ? 'border-gold-500 bg-gold-50/50'
-                    : 'border-royal-200 hover:border-gold-500 hover:bg-cream-100/40'
-                }`}>
-                  <Upload className={`w-16 h-16 mx-auto mb-4 ${data.manuscriptName ? 'text-gold-500' : 'text-royal-300'}`} />
-                  {data.manuscriptName ? (
-                    <>
-                      <p className="font-display text-xl text-royal-900 mb-1">{data.manuscriptName}</p>
-                      <p className="text-sm text-gold-700">✓ Manuscript ready</p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="font-display text-xl text-royal-900 mb-2">Drop your manuscript here</p>
-                      <p className="text-sm text-ink-900/60">or click to browse</p>
-                    </>
-                  )}
+              <FileUpload
+                kind="manuscript"
+                currentUrl={data.manuscriptUrl || null}
+                onUploaded={(url) => {
+                  const fileName = url.split('/').pop() || 'manuscript';
+                  setData({ ...data, manuscriptUrl: url, manuscriptName: decodeURIComponent(fileName) });
+                }}
+                helpText=".docx, .pdf, .txt, .rtf — Max 50MB"
+              />
+
+              {data.manuscriptUrl && (
+                <div className="p-4 rounded-xl bg-green-50 border border-green-200 flex items-start gap-3">
+                  <Check className="w-5 h-5 text-green-700 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-green-900">
+                    <strong>Manuscript uploaded successfully.</strong> You can replace it before submitting.
+                  </div>
                 </div>
-              </label>
+              )}
 
               <div className="bg-royal-50 border border-royal-100 rounded-xl p-4 flex items-start gap-3">
                 <Sparkles className="w-5 h-5 text-gold-600 flex-shrink-0 mt-0.5" />
@@ -302,7 +315,7 @@ export default function UploadWizard() {
                     <p className="font-display text-3xl text-gold-gradient mt-4">
                       {formatPrice(currency === 'INR' ? plan.priceINR : plan.priceUSD, currency)}
                     </p>
-                    <p className="text-xs text-ink-900/60 mt-1">{plan.royaltyPercent}% royalty</p>
+                    <p className="text-xs text-ink-900/60 mt-1">One-time payment</p>
                     <ul className="mt-4 space-y-2">
                       {plan.features.slice(0, 4).map((f, i) => (
                         <li key={i} className="text-xs text-ink-900/70 flex items-start gap-2">
@@ -404,29 +417,23 @@ export default function UploadWizard() {
               </div>
 
               <div className="bg-gradient-to-r from-gold-50 to-cream-100 rounded-2xl p-6 border border-gold-200">
-                <p className="text-xs tracking-widest uppercase text-gold-700 font-semibold mb-2">Your earnings per sale</p>
+                <p className="text-xs tracking-widest uppercase text-gold-700 font-semibold mb-2">Book pricing summary</p>
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <p className="font-display text-3xl text-royal-900">
-                      {formatPrice(
-                        data.priceINR * (PLANS.find((p) => p.id === data.planTier)!.royaltyPercent / 100),
-                        'INR'
-                      )}
+                      {formatPrice(data.priceINR, 'INR')}
                     </p>
-                    <p className="text-xs text-ink-900/60">per INR sale</p>
+                    <p className="text-xs text-ink-900/60">India price</p>
                   </div>
                   <div>
                     <p className="font-display text-3xl text-royal-900">
-                      {formatPrice(
-                        data.priceUSD * (PLANS.find((p) => p.id === data.planTier)!.royaltyPercent / 100),
-                        'USD'
-                      )}
+                      {formatPrice(data.priceUSD, 'USD')}
                     </p>
-                    <p className="text-xs text-ink-900/60">per USD sale</p>
+                    <p className="text-xs text-ink-900/60">Global price</p>
                   </div>
                 </div>
                 <p className="text-xs text-ink-900/60 mt-3">
-                  Based on {PLANS.find((p) => p.id === data.planTier)!.royaltyPercent}% royalty in {data.planTier} plan.
+                  Once published, your book will be available worldwide at these prices.
                 </p>
               </div>
             </div>

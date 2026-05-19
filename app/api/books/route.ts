@@ -21,6 +21,8 @@ const createBookSchema = z.object({
   genre: z.string().min(1),
   language: z.string().default('English'),
   description: z.string().min(10),
+  publisher: z.string().optional().nullable(),
+  manuscriptUrl: z.string().optional().nullable(),
   planTier: z.enum(['STARTER', 'PROFESSIONAL', 'BESTSELLER']).default('STARTER'),
   priceINR: z.number().optional(),
   priceUSD: z.number().optional(),
@@ -36,13 +38,22 @@ export async function POST(req: NextRequest) {
 
     const book = await prisma.book.create({
       data: {
-        ...data,
+        title: data.title,
+        subtitle: data.subtitle,
+        genre: data.genre,
+        language: data.language,
+        description: data.description,
+        publisher: data.publisher || null,
+        manuscriptUrl: data.manuscriptUrl || null,
+        planTier: data.planTier,
+        priceINR: data.priceINR,
+        priceUSD: data.priceUSD,
         authorId: user.id,
-        status: 'SUBMITTED',
+        status: 'DRAFT', // Stays DRAFT until payment is complete
       },
     });
 
-    return NextResponse.json({ book });
+    return NextResponse.json({ book, bookId: book.id });
   } catch (err: any) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: err.errors[0].message }, { status: 400 });

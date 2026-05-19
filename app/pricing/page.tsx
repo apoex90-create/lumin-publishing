@@ -17,7 +17,7 @@ export default async function PricingPage() {
         tagline: p.tagline,
         priceINR: p.priceINR,
         priceUSD: p.priceUSD,
-        royaltyPercent: p.royaltyPercent,
+        royaltyPercent: 0, // deprecated, kept for type compat
         popular: p.isPopular,
         features: (() => { try { return JSON.parse(p.features); } catch { return []; } })() as string[],
       }))

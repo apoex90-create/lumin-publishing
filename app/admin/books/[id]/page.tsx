@@ -108,16 +108,42 @@ export default async function AdminBookDetailPage({ params }: { params: Promise<
 
           {/* Files */}
           <div className="bg-ink-900/60 border border-cream-100/10 rounded-2xl p-5">
-            <h3 className="text-xs tracking-widest uppercase text-gold-400 font-bold mb-3">Files</h3>
-            <div className="space-y-2 text-sm">
-              <p className="text-cream-100/60">Manuscript: {book.manuscriptUrl ? <a className="text-gold-300 underline">Download</a> : '—'}</p>
-              <p className="text-cream-100/60">Cover: {book.coverUrl ? <a className="text-gold-300 underline">View</a> : '—'}</p>
-              <p className="text-cream-100/60">ISBN: <span className="text-cream-50 font-mono">{book.isbn || '—'}</span></p>
+            <h3 className="text-xs tracking-widest uppercase text-gold-400 font-bold mb-3">Files & ISBN</h3>
+            <div className="space-y-3 text-sm">
+              <div className="text-cream-100/60">
+                Manuscript: {book.manuscriptUrl ? (
+                  <a href={book.manuscriptUrl} target="_blank" rel="noopener noreferrer" className="text-gold-300 underline ml-1">View / Download</a>
+                ) : <span className="text-cream-100/40 ml-1">Not uploaded</span>}
+              </div>
+              <div className="text-cream-100/60">
+                Edited Manuscript: {book.editedManuscriptUrl ? (
+                  <a href={book.editedManuscriptUrl} target="_blank" rel="noopener noreferrer" className="text-gold-300 underline ml-1">View / Download</a>
+                ) : <span className="text-cream-100/40 ml-1">Not yet</span>}
+              </div>
+              <div className="text-cream-100/60">
+                Cover: {book.coverUrl ? (
+                  <a href={book.coverUrl} target="_blank" rel="noopener noreferrer" className="text-gold-300 underline ml-1">View</a>
+                ) : <span className="text-cream-100/40 ml-1">—</span>}
+              </div>
+              <div className="text-cream-100/60">
+                ISBN: <span className="text-cream-50 font-mono ml-1">{book.isbn || '—'}</span>
+                {book.isbnRequested && !book.isbn && <span className="ml-2 text-[10px] text-gold-300 bg-gold-500/10 px-2 py-0.5 rounded-full">REQUESTED</span>}
+              </div>
+              {book.publisher && (
+                <div className="text-cream-100/60">
+                  Publisher: <span className="text-cream-50 ml-1">{book.publisher}</span>
+                </div>
+              )}
+              {book.publicationYear && (
+                <div className="text-cream-100/60">
+                  Year: <span className="text-cream-50 ml-1">{book.publicationYear}</span>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Edit button */}
-          <Link href={`/admin/books/${book.id}/edit`} className="block w-full text-center px-4 py-3 rounded-full bg-cream-100/5 border border-cream-100/20 text-cream-50 hover:bg-cream-100/10 transition-all font-medium">
+          <Link href={`/admin/books/${book.id}/edit`} className="block w-full text-center px-4 py-3 rounded-full bg-gold-shimmer text-royal-900 font-semibold hover:scale-[1.02] transition-all">
             <Edit size={14} className="inline mr-2" /> Edit All Details
           </Link>
         </div>

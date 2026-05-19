@@ -16,7 +16,7 @@ export default async function PricingPreview() {
         tagline: p.tagline,
         priceINR: p.priceINR,
         priceUSD: p.priceUSD,
-        royaltyPercent: p.royaltyPercent,
+        royaltyPercent: 0,
         popular: p.isPopular,
         features: (() => { try { return JSON.parse(p.features); } catch { return []; } })() as string[],
       }))

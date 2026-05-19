@@ -22,8 +22,8 @@ export default async function TermsPage() {
         <h2 className="font-display text-2xl text-royal-900">2. Author Rights</h2>
         <p>You retain 100% of intellectual property rights to your work. {brand} holds a non-exclusive distribution license for the duration of your active publishing agreement.</p>
 
-        <h2 className="font-display text-2xl text-royal-900">3. Royalties & Payments</h2>
-        <p>Royalty percentages are defined per plan: Starter (70%), Professional (75%), Bestseller (80%). Payouts are processed monthly.</p>
+        <h2 className="font-display text-2xl text-royal-900">3. Payment Terms</h2>
+        <p>Publishing fees are one-time per book and defined per plan. Payment is collected only after manuscript approval. Refunds are subject to the Refund Policy.</p>
 
         <h2 className="font-display text-2xl text-royal-900">4. Content Standards</h2>
         <p>You warrant that your submitted work is original, does not infringe third-party rights, and complies with applicable laws.</p>

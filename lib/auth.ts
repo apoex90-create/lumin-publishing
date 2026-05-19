@@ -66,6 +66,9 @@ export async function getCurrentUser() {
       avatarUrl: true,
       bio: true,
       country: true,
+      phone: true,
+      phoneVerified: true,
+      onboardingCompleted: true,
     },
   });
   return user;

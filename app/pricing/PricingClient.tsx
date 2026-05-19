@@ -10,7 +10,7 @@ import Ornament from '@/components/ui/Ornament';
 const defaultFaqs = [
   { q: 'When am I charged?', a: "You're only charged when your book is approved for publishing. If your manuscript isn't a fit, there are no fees." },
   { q: 'Do I keep the rights to my book?', a: 'Absolutely. You retain 100% of intellectual property rights. We hold only a non-exclusive distribution license.' },
-  { q: 'How quickly will I be paid?', a: 'Royalties are calculated monthly and paid out automatically. Indian authors receive payouts via Razorpay; global authors via Stripe.' },
+  { q: 'How does payment work?', a: 'Payments are one-time per book. Indian authors pay via Razorpay; global authors via Stripe. No subscriptions, no hidden charges.' },
   { q: 'What if I want to leave?', a: 'You can unpublish any book at any time. Your files remain yours to take elsewhere.' },
 ];
 
@@ -45,7 +45,7 @@ export default function PricingClient({ plans, faqs }: { plans: Plan[]; faqs: { 
             One fee. <em className="italic text-gold-gradient">No surprises.</em>
           </h1>
           <p className="mt-8 text-xl text-ink-900/70 font-serif leading-relaxed">
-            Choose the plan that fits your ambition. Authors always keep the majority of royalties — and you only pay when your book is approved for publishing.
+            Choose the plan that fits your ambition. Transparent one-time pricing — you only pay when your book is approved for publishing.
           </p>
         </div>
       </section>
@@ -80,7 +80,7 @@ export default function PricingClient({ plans, faqs }: { plans: Plan[]; faqs: { 
                     </span>
                   </div>
                   <p className={`text-xs mt-2 tracking-wider uppercase ${plan.popular ? 'text-cream-100/50' : 'text-ink-900/50'}`}>
-                    One-time • {plan.royaltyPercent}% royalty
+                    One-time payment
                   </p>
                 </div>
 

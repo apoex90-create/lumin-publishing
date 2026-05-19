@@ -21,6 +21,7 @@ export default function SignupPage() {
     const data = {
       fullName: formData.get('fullName'),
       email: formData.get('email'),
+      phone: formData.get('phone'),
       password: formData.get('password'),
       country: formData.get('country'),
     };
@@ -57,13 +58,13 @@ export default function SignupPage() {
             <em className="italic text-gold-gradient">storyteller.</em>
           </h1>
           <p className="mt-8 text-lg text-ink-900/70 font-serif leading-relaxed max-w-md">
-            You're moments away from joining a community of <strong className="text-royal-900">2,400+ published authors</strong> who chose LUMIN as the home for their words.
+            You're moments away from joining a growing community of authors who chose us as the home for their words.
           </p>
           <div className="mt-12 space-y-4">
             {[
               'Publish in as little as 7 days',
-              'Keep up to 80% of royalties',
-              'Global distribution included',
+              'Premium cover design included',
+              'Global distribution to 180+ countries',
               'Dedicated author support',
             ].map((perk, i) => (
               <div key={i} className="flex items-center gap-3">
@@ -114,6 +115,21 @@ export default function SignupPage() {
                   className="w-full px-4 py-3 rounded-xl bg-cream-50 border border-royal-200 focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all"
                   placeholder="you@example.com"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold tracking-widest uppercase text-royal-800 mb-2">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  required
+                  pattern="[+]?[0-9 \-]{7,20}"
+                  className="w-full px-4 py-3 rounded-xl bg-cream-50 border border-royal-200 focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all"
+                  placeholder="+91 9876543210"
+                />
+                <p className="text-[10px] text-ink-900/40 mt-1">Used to verify your identity for ISBN applications</p>
               </div>
 
               <div>

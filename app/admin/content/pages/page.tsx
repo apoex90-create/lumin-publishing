@@ -29,7 +29,7 @@ const pageMap = [
     url: '/pricing',
     icon: DollarSign,
     editPoints: [
-      { label: 'Plans (name, price, royalty, features)', where: '/admin/content/plans', tab: null },
+      { label: 'Plans (name, price, features)', where: '/admin/content/plans', tab: null },
       { label: 'FAQs at bottom', where: '/admin/content/faqs', tab: null },
     ],
   },

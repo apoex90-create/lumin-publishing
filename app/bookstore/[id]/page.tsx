@@ -100,11 +100,16 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
                 <BookPriceBlock priceINR={book.priceINR || 0} priceUSD={book.priceUSD || 0} />
               </div>
 
-              {book.isbn && (
-                <div className="mt-6 text-xs tracking-widest uppercase text-ink-900/40">
-                  ISBN: {book.isbn}
-                </div>
-              )}
+              <div className="mt-8 grid grid-cols-2 md:grid-cols-3 gap-4 p-6 rounded-2xl bg-cream-100/50 border border-royal-100">
+                <DetailItem label="Author" value={book.author.fullName} />
+                {book.publisher && <DetailItem label="Publisher" value={book.publisher} />}
+                {book.publicationYear && <DetailItem label="Year" value={String(book.publicationYear)} />}
+                <DetailItem label="Language" value={book.language} />
+                {book.pageCount && <DetailItem label="Pages" value={String(book.pageCount)} />}
+                <DetailItem label="Genre" value={book.genre} />
+                {book.isbn && <DetailItem label="ISBN" value={book.isbn} mono />}
+                {book.coAuthors && <DetailItem label="Co-Authors" value={book.coAuthors} />}
+              </div>
 
               {book.author.bio && (
                 <div className="mt-12 pt-8 border-t border-royal-100">
@@ -162,4 +167,13 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     title: `${book.title} — ${book.author.fullName}`,
     description: book.description.slice(0, 160),
   };
+}
+
+function DetailItem({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div>
+      <p className="text-[10px] tracking-widest uppercase text-ink-900/50 font-bold">{label}</p>
+      <p className={`text-sm text-royal-900 mt-1 ${mono ? 'font-mono' : 'font-medium'}`}>{value}</p>
+    </div>
+  );
 }
