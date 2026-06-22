@@ -212,11 +212,18 @@ Set the `MAX_AI_SPEND_INR_PER_DAY` env var (you'd add to maintenance bot logic) 
 ## 🔐 Security Notes
 
 1. **Never commit .env** — already in .gitignore
-2. **Rotate `JWT_SECRET`** every 6 months
+2. **Rotate `JWT_SECRET`** every 6 months — changing it invalidates all active sessions (users must re-login). Deploy new value, then restart Vercel functions.
 3. **Set `PII_ENCRYPTION_KEY`** (64-char hex, 32 random bytes) before going live — without it, author payout details (bank account, IFSC, PAN, UPI) cannot be encrypted at rest and the app will refuse to start in production
-4. **Enable 2FA on**: Vercel, Neon, Razorpay, Stripe, AI provider accounts
-5. **Backup DB daily** — Neon does this automatically, but verify in dashboard
-6. **Set up Sentry** for error alerts before going live
+4. **Rotating `PII_ENCRYPTION_KEY`** — you MUST re-encrypt existing DB rows before deploying the new key, or all payout fields will return null. Run this migration script **before** swapping the key in Vercel:
+   ```sql
+   -- Identify rows that need re-encryption (run in Neon SQL editor)
+   SELECT id, "payoutUpi", "payoutBankAccount", "payoutPanNumber"
+   FROM "User" WHERE "payoutMethod" IS NOT NULL;
+   ```
+   Then run a Node script using `decryptPII` (old key) → `encryptPII` (new key) → `prisma.user.update` for each row.
+5. **Enable 2FA on**: Vercel, Neon, Razorpay, Stripe, AI provider accounts
+6. **Backup DB daily** — Neon does this automatically, but verify in dashboard
+7. **Set up Sentry** for error alerts before going live
 
 ---
 

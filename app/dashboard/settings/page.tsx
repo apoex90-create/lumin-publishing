@@ -32,13 +32,22 @@ export default async function SettingsPage() {
   });
   if (!user) redirect('/login');
 
+  // Decrypt PII fields server-side; warn if decryption returns null for a stored value
+  // (indicates key mismatch or data corruption — do NOT surface raw ciphertext to client).
+  const safeDecrypt = (stored: string | null, field: string): string | null => {
+    if (!stored) return null;
+    const result = decryptPII(stored);
+    if (!result) console.warn(`[settings] decryptPII returned null for field "${field}" — possible key rotation or data corruption`);
+    return result;
+  };
+
   const decryptedUser = {
     ...user,
-    payoutUpi: decryptPII(user.payoutUpi),
-    payoutBankName: decryptPII(user.payoutBankName),
-    payoutBankAccount: decryptPII(user.payoutBankAccount),
-    payoutBankIfsc: decryptPII(user.payoutBankIfsc),
-    payoutPanNumber: decryptPII(user.payoutPanNumber),
+    payoutUpi: safeDecrypt(user.payoutUpi, 'payoutUpi'),
+    payoutBankName: safeDecrypt(user.payoutBankName, 'payoutBankName'),
+    payoutBankAccount: safeDecrypt(user.payoutBankAccount, 'payoutBankAccount'),
+    payoutBankIfsc: safeDecrypt(user.payoutBankIfsc, 'payoutBankIfsc'),
+    payoutPanNumber: safeDecrypt(user.payoutPanNumber, 'payoutPanNumber'),
   };
 
   return (

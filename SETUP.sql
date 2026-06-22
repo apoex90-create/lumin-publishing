@@ -58,6 +58,10 @@ CREATE TABLE "User" (
   "phoneVerified" BOOLEAN DEFAULT FALSE,
   country TEXT DEFAULT 'IN',
   "onboardingCompleted" BOOLEAN DEFAULT FALSE,
+  "emailVerified"       BOOLEAN DEFAULT FALSE,
+  "emailVerifyToken"    TEXT UNIQUE,
+  "passwordResetToken"  TEXT UNIQUE,
+  "passwordResetExpiry" TIMESTAMP,
   "payoutMethod" TEXT,
   "payoutUpi" TEXT,
   "payoutBankName" TEXT,
@@ -309,7 +313,7 @@ CREATE TABLE "SocialLink" (
 
 CREATE TABLE "Plan" (
   id TEXT PRIMARY KEY,
-  tier TEXT UNIQUE NOT NULL,
+  tier "PlanTier" UNIQUE NOT NULL,
   name TEXT NOT NULL,
   tagline TEXT NOT NULL,
   "priceINR" DOUBLE PRECISION NOT NULL,

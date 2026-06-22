@@ -9,7 +9,8 @@ const createUserSchema = z.object({
   password: z.string().min(6),
   country: z.string().optional(),
   bio: z.string().optional(),
-  role: z.enum(['AUTHOR', 'ADMIN', 'READER']).default('AUTHOR'),
+  // role is intentionally excluded: admin-created accounts are always AUTHORS.
+  // Promote to ADMIN via the team management page (super-admin only).
 });
 
 export async function POST(req: NextRequest) {
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
         fullName: data.fullName,
         country: data.country || 'IN',
         bio: data.bio || null,
-        role: data.role,
+        role: 'AUTHOR',
       },
     });
 

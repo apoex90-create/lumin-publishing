@@ -4,9 +4,11 @@ import { getCurrentUser } from '@/lib/auth';
 
 const AUTHOR_EDITABLE_FIELDS = [
   'title', 'subtitle', 'genre', 'language', 'description',
-  'coverUrl', 'pageCount', 'priceINR', 'priceUSD',
-  'publisher', 'publicationYear', 'coAuthors', 'editorName',
+  'coverUrl', 'pageCount',
+  'publicationYear', 'coAuthors', 'editorName',
   'manuscriptUrl',
+  // priceINR/priceUSD: server-controlled, never trust client
+  // publisher: admin-only field
 ];
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -33,7 +35,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const updated = await prisma.book.update({ where: { id }, data });
     return NextResponse.json({ book: updated });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error('Book operation error:', err);
+    return NextResponse.json({ error: 'Operation failed' }, { status: 500 });
   }
 }
 
@@ -55,6 +58,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     await prisma.book.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error('Book operation error:', err);
+    return NextResponse.json({ error: 'Operation failed' }, { status: 500 });
   }
 }

@@ -41,7 +41,10 @@ export function rateLimit(key: string, limit: number, windowMs: number): RateLim
   return { ok: true, retryAfterSeconds: 0 };
 }
 
-export function getClientIp(req: Request): string {
+export function getClientIp(req: Request & { ip?: string }): string {
+  // On Vercel, req.ip is set by the edge network and cannot be spoofed by callers.
+  // Fall back to x-forwarded-for only in dev (Vercel always sets req.ip in production).
+  if ((req as any).ip) return (req as any).ip as string;
   const forwarded = req.headers.get('x-forwarded-for');
   if (forwarded) return forwarded.split(',')[0].trim();
   return req.headers.get('x-real-ip') || 'unknown';

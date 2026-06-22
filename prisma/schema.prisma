@@ -88,6 +88,14 @@ model User {
   // Onboarding
   onboardingCompleted Boolean @default(false)
 
+  // Email verification
+  emailVerified       Boolean  @default(false)
+  emailVerifyToken    String?  @unique
+
+  // Password reset (token is a random hex string, cleared after use)
+  passwordResetToken  String?  @unique
+  passwordResetExpiry DateTime?
+
   // Payout details — encrypted at rest via lib/crypto.ts (AES-256-GCM), see PII_ENCRYPTION_KEY
   payoutMethod    String?  // 'UPI' | 'BANK'
   payoutUpi       String?
@@ -411,7 +419,7 @@ model SocialLink {
 
 model Plan {
   id             String   @id @default(cuid())
-  tier           String   @unique // 'STARTER' | 'PROFESSIONAL' | 'BESTSELLER'
+  tier           PlanTier @unique
   name           String
   tagline        String
   priceINR       Float

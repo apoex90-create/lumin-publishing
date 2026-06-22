@@ -11,17 +11,26 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const limit = rateLimit(`contact:${getClientIp(req)}`, 5, 60 * 60 * 1000);
-  if (!limit.ok) {
+  const ipLimit = rateLimit(`contact-ip:${getClientIp(req)}`, 5, 60 * 60 * 1000);
+  if (!ipLimit.ok) {
     return NextResponse.json(
       { error: 'Too many requests. Please try again later.' },
-      { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } }
+      { status: 429, headers: { 'Retry-After': String(ipLimit.retryAfterSeconds) } }
     );
   }
 
   try {
     const body = await req.json();
     const data = schema.parse(body);
+
+    // Also rate-limit per email address to prevent per-account abuse on shared networks
+    const emailLimit = rateLimit(`contact-email:${data.email.toLowerCase()}`, 10, 60 * 60 * 1000);
+    if (!emailLimit.ok) {
+      return NextResponse.json(
+        { error: 'Too many requests from this address. Please try again later.' },
+        { status: 429, headers: { 'Retry-After': String(emailLimit.retryAfterSeconds) } }
+      );
+    }
 
     const thread = await prisma.supportThread.create({
       data: {

@@ -1,6 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
+import { z } from 'zod';
+
+// Per-resource Zod schemas for fields that carry enum/format constraints
+const RESOURCE_SCHEMAS: Record<string, z.ZodTypeAny> = {
+  plans: z.object({
+    tier: z.enum(['STARTER', 'PROFESSIONAL', 'BESTSELLER']).optional(),
+    priceINR: z.number().nonnegative().optional(),
+    priceUSD: z.number().nonnegative().optional(),
+    royaltyPercent: z.number().int().min(0).max(100).optional().nullable(),
+    isPopular: z.boolean().optional(),
+    isPublished: z.boolean().optional(),
+    sortOrder: z.number().int().optional(),
+  }).passthrough(),
+  faqs: z.object({
+    isPublished: z.boolean().optional(),
+    sortOrder: z.number().int().optional(),
+  }).passthrough(),
+  footer: z.object({
+    section: z.enum(['Publish', 'Discover', 'Company', 'Legal']).optional(),
+    isExternal: z.boolean().optional(),
+    isPublished: z.boolean().optional(),
+    sortOrder: z.number().int().optional(),
+  }).passthrough(),
+};
 
 const MODEL_MAP: Record<string, any> = {
   testimonials: 'testimonial',
@@ -58,11 +82,21 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ re
 
   try {
     const body = await req.json();
+
+    // Validate against resource schema if one exists
+    const schema = RESOURCE_SCHEMAS[resource];
+    if (schema) {
+      const result = schema.safeParse(body);
+      if (!result.success) {
+        return NextResponse.json({ error: result.error.errors[0].message }, { status: 400 });
+      }
+    }
+
     const item = await model.update({ where: { id }, data: cleanPayload(resource, body) });
     return NextResponse.json({ item });
   } catch (err: any) {
     console.error(`Update ${resource} error:`, err);
-    return NextResponse.json({ error: err.message || 'Failed to update' }, { status: 400 });
+    return NextResponse.json({ error: 'Failed to update' }, { status: 400 });
   }
 }
 
@@ -78,6 +112,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ r
     await model.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 400 });
+    console.error(`Delete ${resource} error:`, err);
+    return NextResponse.json({ error: 'Failed to delete' }, { status: 400 });
   }
 }
