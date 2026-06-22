@@ -21,6 +21,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'Please complete title and description before submitting' }, { status: 400 });
   }
 
+  const paidOrder = await prisma.paymentOrder.findFirst({
+    where: { bookId: id, userId: me.id, status: 'PAID' },
+  });
+  if (!paidOrder) {
+    return NextResponse.json({ error: 'Payment required before submission. Please complete payment first.' }, { status: 402 });
+  }
+
   try {
     await prisma.book.update({
       where: { id },

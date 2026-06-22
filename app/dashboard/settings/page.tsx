@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { decryptPII } from '@/lib/crypto';
 import SettingsForm from '@/components/dashboard/SettingsForm';
 
 export const dynamic = 'force-dynamic';
@@ -31,6 +32,15 @@ export default async function SettingsPage() {
   });
   if (!user) redirect('/login');
 
+  const decryptedUser = {
+    ...user,
+    payoutUpi: decryptPII(user.payoutUpi),
+    payoutBankName: decryptPII(user.payoutBankName),
+    payoutBankAccount: decryptPII(user.payoutBankAccount),
+    payoutBankIfsc: decryptPII(user.payoutBankIfsc),
+    payoutPanNumber: decryptPII(user.payoutPanNumber),
+  };
+
   return (
     <div>
       <div className="mb-10">
@@ -39,7 +49,7 @@ export default async function SettingsPage() {
         <p className="text-ink-900/60 mt-2">Manage your profile, payout details, and security.</p>
       </div>
 
-      <SettingsForm user={user} />
+      <SettingsForm user={decryptedUser} />
     </div>
   );
 }

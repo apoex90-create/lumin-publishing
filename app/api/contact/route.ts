@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { z } from 'zod';
 
 const schema = z.object({
@@ -10,6 +11,14 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  const limit = rateLimit(`contact:${getClientIp(req)}`, 5, 60 * 60 * 1000);
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } }
+    );
+  }
+
   try {
     const body = await req.json();
     const data = schema.parse(body);

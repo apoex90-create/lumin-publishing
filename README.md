@@ -102,14 +102,19 @@ Open your browser to **[http://localhost:3000](http://localhost:3000)** — you 
 
 ---
 
-## 🔑 Demo Login
+## 🔑 Admin Login
 
-After running the seed script (step 6), you can log in with:
+Running the seed script (step 6) creates one admin account. By default it's
+`admin@lumin.demo` with a **randomly generated password printed to the
+console** — copy it from there, it's shown only once. To set your own
+credentials instead, set `ADMIN_EMAIL` / `ADMIN_PASSWORD` before seeding:
 
-| Account | Email | Password | What you can do |
-|---|---|---|---|
-| Author | `author@lumin.demo` | `demo1234` | Author dashboard, submit books |
-| **Admin** 👑 | `admin@lumin.demo` | `demo1234` | **Full platform control** |
+```bash
+ADMIN_EMAIL="you@example.com" ADMIN_PASSWORD="a-strong-password" node prisma/seed.js
+```
+
+Change the password again after your first login. There is no seeded author
+account — create one at `/signup`.
 
 When logged in as **Admin**, click your avatar (top right) → **👑 Admin Panel** to enter the king's view at `/admin`.
 

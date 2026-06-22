@@ -4,8 +4,17 @@
 
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 const prisma = new PrismaClient();
+
+// No hardcoded demo credentials — uses ADMIN_EMAIL/ADMIN_PASSWORD if set,
+// otherwise generates a random one-time password printed to the console.
+function resolveAdminCredentials() {
+  const email = process.env.ADMIN_EMAIL || 'admin@lumin.demo';
+  const password = process.env.ADMIN_PASSWORD || crypto.randomBytes(12).toString('base64url');
+  return { email, password, generated: !process.env.ADMIN_PASSWORD };
+}
 
 const AGENTS = [
   { type: 'ORCHESTRATOR', name: '🎯 Manager', desc: 'Routes work to all other agents.' },
@@ -126,13 +135,16 @@ const DEFAULT_SETTINGS_RECORDS = [
 async function main() {
   console.log('🌱 Seeding LUMIN...');
 
-  const passwordHash = await bcrypt.hash('demo1234', 10);
+  const { email, password, generated } = resolveAdminCredentials();
+  const existingAdmin = await prisma.user.findUnique({ where: { email } });
+  const passwordHash = await bcrypt.hash(password, 10);
 
-  // Admin user
+  // Admin user — password is only set on first creation; re-running the seed
+  // never overwrites an existing admin's password.
   await prisma.user.upsert({
-    where: { email: 'admin@lumin.demo' },
+    where: { email },
     update: {},
-    create: { email: 'admin@lumin.demo', passwordHash, fullName: 'Platform Admin', role: 'ADMIN', country: 'IN' },
+    create: { email, passwordHash, fullName: 'Platform Admin', role: 'ADMIN', country: 'IN' },
   });
 
   // Agents
@@ -171,7 +183,18 @@ async function main() {
   }
 
   console.log('✅ Seed complete!');
-  console.log('   Admin: admin@lumin.demo / demo1234');
+  if (!existingAdmin) {
+    console.log(`   Admin account created: ${email}`);
+    if (generated) {
+      console.log(`   Generated one-time password: ${password}`);
+      console.log('   ⚠️  Save this now — it will not be shown again. Set ADMIN_PASSWORD to choose your own next time.');
+    } else {
+      console.log('   Password: set via the ADMIN_PASSWORD env var.');
+    }
+    console.log('   → Change this password immediately after your first login.');
+  } else {
+    console.log(`   Admin account already exists: ${email} (password unchanged)`);
+  }
   console.log('   → /admin to start configuring');
 }
 

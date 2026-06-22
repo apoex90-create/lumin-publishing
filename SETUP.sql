@@ -11,6 +11,7 @@ DROP TYPE IF EXISTS "AgentType" CASCADE;
 DROP TYPE IF EXISTS "AgentStatus" CASCADE;
 DROP TYPE IF EXISTS "JobStatus" CASCADE;
 DROP TYPE IF EXISTS "ApprovalStatus" CASCADE;
+DROP TYPE IF EXISTS "PaymentOrderStatus" CASCADE;
 
 CREATE TYPE "Role" AS ENUM ('AUTHOR', 'ADMIN', 'READER');
 CREATE TYPE "BookStatus" AS ENUM ('DRAFT', 'SUBMITTED', 'IN_REVIEW', 'IN_EDITING', 'COVER_DESIGN', 'FORMATTING', 'PUBLISHED', 'REJECTED');
@@ -19,6 +20,7 @@ CREATE TYPE "AgentType" AS ENUM ('ORCHESTRATOR', 'EDITOR', 'DESIGNER', 'FORMATTE
 CREATE TYPE "AgentStatus" AS ENUM ('ACTIVE', 'PAUSED', 'ERROR', 'DISABLED');
 CREATE TYPE "JobStatus" AS ENUM ('QUEUED', 'RUNNING', 'AWAITING_APPROVAL', 'COMPLETED', 'FAILED', 'CANCELLED');
 CREATE TYPE "ApprovalStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
+CREATE TYPE "PaymentOrderStatus" AS ENUM ('CREATED', 'PAID', 'FAILED');
 
 DROP TABLE IF EXISTS "SupportMessage" CASCADE;
 DROP TABLE IF EXISTS "SupportThread" CASCADE;
@@ -42,6 +44,7 @@ DROP TABLE IF EXISTS "Service" CASCADE;
 DROP TABLE IF EXISTS "HowItWorksStep" CASCADE;
 DROP TABLE IF EXISTS "PageContent" CASCADE;
 DROP TABLE IF EXISTS "SiteSetting" CASCADE;
+DROP TABLE IF EXISTS "PaymentOrder" CASCADE;
 
 CREATE TABLE "User" (
   id TEXT PRIMARY KEY,
@@ -107,6 +110,18 @@ CREATE TABLE "Sale" (
   "buyerEmail" TEXT,
   channel TEXT DEFAULT 'direct',
   "createdAt" TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE "PaymentOrder" (
+  id TEXT PRIMARY KEY,
+  "bookId" TEXT NOT NULL REFERENCES "Book"(id) ON DELETE CASCADE,
+  "userId" TEXT NOT NULL REFERENCES "User"(id) ON DELETE CASCADE,
+  "razorpayOrderId" TEXT UNIQUE NOT NULL,
+  amount DOUBLE PRECISION NOT NULL,
+  currency TEXT DEFAULT 'INR',
+  status "PaymentOrderStatus" DEFAULT 'CREATED',
+  "createdAt" TIMESTAMP DEFAULT NOW(),
+  "paidAt" TIMESTAMP
 );
 
 CREATE TABLE "Approval" (
@@ -339,9 +354,12 @@ CREATE TABLE "PageContent" (
   "updatedAt" TIMESTAMP DEFAULT NOW()
 );
 
--- Admin user (password "demo1234" — CHANGE AFTER FIRST LOGIN)
-INSERT INTO "User" (id, email, "passwordHash", "fullName", role, country, "onboardingCompleted") VALUES
-  ('admin-001', 'admin@lumin.demo', '$2b$10$rXOyGYTPzkXC.YYO5xZh3.K0yJLpaxQqHzKxV3FxLvL9pXZ8KwGEa', 'Platform Admin', 'ADMIN', 'IN', TRUE);
+-- Admin user is intentionally NOT created here. A hardcoded password hash in
+-- a checked-in SQL file becomes a publicly known credential the moment this
+-- repo is pushed anywhere. Create the admin account by running the seed
+-- script instead, which generates a random password (or honors ADMIN_EMAIL /
+-- ADMIN_PASSWORD env vars):
+--   node prisma/seed.js
 
 -- All 10 agents
 INSERT INTO "Agent" (id, type, name, description, config) VALUES
@@ -428,4 +446,4 @@ INSERT INTO "SiteSetting" (key, value, type) VALUES
   ('about.mission.text', 'We believe the gatekeeping era of publishing is over. We blend AI precision with the judgment of craft.', 'string');
 
 -- DONE!
--- Login: admin@lumin.demo / demo1234 — CHANGE PASSWORD ON FIRST LOGIN
+-- Now run `node prisma/seed.js` to create your admin account.

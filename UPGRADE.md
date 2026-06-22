@@ -45,12 +45,21 @@ The new code expects new tables (Testimonial, TeamMember, FAQ, FooterLink, etc.)
 5. Click **Run**
 
 ⚠️ **This will DELETE all existing data** and create a clean slate with:
-- Admin user: `admin@lumin.demo` / `demo1234`
 - All 10 agents
 - Default pricing plans
 - Default How It Works steps
 - All footer links (no more 404s)
 - All default settings
+
+`SETUP.sql` no longer creates an admin user (a hardcoded password hash in a
+checked-in SQL file is a public credential). After running it, create your
+admin account with:
+
+```bash
+ADMIN_EMAIL="you@example.com" ADMIN_PASSWORD="a-strong-password" node prisma/seed.js
+```
+
+Omit `ADMIN_PASSWORD` to get a random one printed to the console instead.
 
 ### Step 3: Vercel will auto-redeploy
 
@@ -59,7 +68,7 @@ Once you push to GitHub, Vercel detects the changes and rebuilds automatically. 
 ### Step 4: Login and configure
 
 1. Go to your site → `/login`
-2. Use `admin@lumin.demo` / `demo1234`
+2. Use the admin email/password you set (or were printed) when seeding
 3. Click your avatar → **👑 Admin Panel**
 4. Visit `/admin/content` to manage everything
 

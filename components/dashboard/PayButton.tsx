@@ -20,11 +20,12 @@ export default function PayButton({ bookId, amount, currency }: Props) {
     setError('');
 
     try {
-      // Create payment order on backend
+      // Create payment order on backend — the amount/currency are derived
+      // server-side from the book's plan tier, never trusted from the client.
       const res = await fetch('/api/payments/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bookId, amount, currency }),
+        body: JSON.stringify({ bookId, currency }),
       });
 
       const data = await res.json();
@@ -47,17 +48,18 @@ export default function PayButton({ bookId, amount, currency }: Props) {
 
         const options = {
           key: data.razorpayKey,
-          amount: amount * 100, // paise
-          currency,
+          amount: Math.round(data.amount * 100), // paise, server-derived
+          currency: data.currency,
           name: 'LUMIN Publishing',
           description: 'Book Publishing Fee',
           order_id: data.razorpayOrderId,
           handler: async (response: any) => {
-            // Verify payment on backend
+            // Verify payment on backend — bookId is derived server-side from
+            // the stored order, so we only forward the gateway response.
             const verifyRes = await fetch('/api/payments/verify', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ ...response, bookId }),
+              body: JSON.stringify(response),
             });
             if (verifyRes.ok) {
               router.push(`/dashboard/books/${bookId}?paid=true`);
@@ -74,14 +76,10 @@ export default function PayButton({ bookId, amount, currency }: Props) {
         const rzp = new (window as any).Razorpay(options);
         rzp.open();
       } else {
-        // Payment gateway not configured yet
-        setError('Payment system is being configured. Your book has been saved as draft — admin will contact you to complete payment manually.');
-        // Mark book as awaiting payment
-        await fetch(`/api/books/${bookId}/submit`, { method: 'POST' });
-        setTimeout(() => {
-          router.push(`/dashboard/books/${bookId}`);
-          router.refresh();
-        }, 3000);
+        // Payment gateway not configured yet — leave the book untouched as a
+        // draft. The author must not be auto-submitted without payment.
+        setError('Payment system is being configured. Please contact support to complete your publishing fee payment — your book remains saved as a draft until then.');
+        setProcessing(false);
       }
     } catch (err: any) {
       setError(err.message);

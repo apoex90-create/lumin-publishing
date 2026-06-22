@@ -87,7 +87,7 @@ export default async function ContactPage() {
 }
 
 export async function generateMetadata() {
-  const settings = await getSettings(['brand.name']).catch(() => ({}));
+  const settings = await getSettings(['brand.name']).catch((): Record<string, string> => ({}));
   return {
     title: `Contact ${settings['brand.name'] || 'LUMIN'}`,
     description: 'Get in touch about your manuscript or any questions about publishing.',

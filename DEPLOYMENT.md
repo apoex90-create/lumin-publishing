@@ -81,14 +81,18 @@ git push -u origin main
 In Vercel project → Settings → Functions → Run once:
 ```bash
 npx prisma migrate deploy
-node prisma/seed.js
+ADMIN_EMAIL="you@example.com" ADMIN_PASSWORD="a-strong-password" node prisma/seed.js
 ```
 
 Or run locally pointing to prod DB:
 ```bash
 DATABASE_URL="your-prod-url" npx prisma migrate deploy
-DATABASE_URL="your-prod-url" node prisma/seed.js
+DATABASE_URL="your-prod-url" ADMIN_EMAIL="you@example.com" ADMIN_PASSWORD="a-strong-password" node prisma/seed.js
 ```
+
+Always set `ADMIN_EMAIL`/`ADMIN_PASSWORD` when seeding production — without
+them the seed script generates a random password and prints it once to the
+console (never a fixed/known default).
 
 #### 5. Activate cron
 Vercel reads `vercel.json` and automatically runs `/api/cron` every minute. This is what makes agents work. No extra setup.
@@ -209,9 +213,10 @@ Set the `MAX_AI_SPEND_INR_PER_DAY` env var (you'd add to maintenance bot logic) 
 
 1. **Never commit .env** — already in .gitignore
 2. **Rotate `JWT_SECRET`** every 6 months
-3. **Enable 2FA on**: Vercel, Neon, Razorpay, Stripe, AI provider accounts
-4. **Backup DB daily** — Neon does this automatically, but verify in dashboard
-5. **Set up Sentry** for error alerts before going live
+3. **Set `PII_ENCRYPTION_KEY`** (64-char hex, 32 random bytes) before going live — without it, author payout details (bank account, IFSC, PAN, UPI) cannot be encrypted at rest and the app will refuse to start in production
+4. **Enable 2FA on**: Vercel, Neon, Razorpay, Stripe, AI provider accounts
+5. **Backup DB daily** — Neon does this automatically, but verify in dashboard
+6. **Set up Sentry** for error alerts before going live
 
 ---
 

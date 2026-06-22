@@ -22,6 +22,48 @@ const MAX_SIZE = {
   avatar: 5 * 1024 * 1024,
 };
 
+// Sniffs the file's actual magic bytes — the client-supplied `file.type` is
+// just a header the caller can set to anything, so binary content must be
+// verified server-side before it's trusted for validation or storage.
+function sniffFileType(buf: Buffer): string | null {
+  if (buf.length >= 4 && buf[0] === 0x25 && buf[1] === 0x50 && buf[2] === 0x44 && buf[3] === 0x46) {
+    return 'application/pdf'; // %PDF
+  }
+  if (buf.length >= 8 && buf[0] === 0xd0 && buf[1] === 0xcf && buf[2] === 0x11 && buf[3] === 0xe0) {
+    return 'application/msword'; // OLE compound file (.doc)
+  }
+  if (buf.length >= 4 && buf[0] === 0x50 && buf[1] === 0x4b && buf[2] === 0x03 && buf[3] === 0x04) {
+    return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'; // zip container (.docx)
+  }
+  if (buf.length >= 5 && buf.subarray(0, 5).toString('latin1') === '{\\rtf') {
+    return 'application/rtf';
+  }
+  if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) {
+    return 'image/jpeg';
+  }
+  if (buf.length >= 8 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) {
+    return 'image/png';
+  }
+  if (buf.length >= 12 && buf.subarray(0, 4).toString('latin1') === 'RIFF' && buf.subarray(8, 12).toString('latin1') === 'WEBP') {
+    return 'image/webp';
+  }
+  return null; // no known binary signature — may be genuine plain text
+}
+
+// text/plain has no magic bytes, so instead check the sample doesn't look like
+// binary data (executables, archives, etc. mislabeled as text/plain).
+function looksLikeText(sample: Buffer): boolean {
+  if (sample.length === 0) return true;
+  let suspicious = 0;
+  for (const byte of sample) {
+    if (byte === 0) {
+      return false; // NUL bytes never appear in genuine text files
+    }
+    if (byte < 0x09 || (byte > 0x0d && byte < 0x20)) suspicious++;
+  }
+  return suspicious / sample.length < 0.05;
+}
+
 export async function POST(req: NextRequest) {
   const me = await getCurrentUser();
 
@@ -80,6 +122,36 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const sample = Buffer.from(await file.slice(0, 16).arrayBuffer());
+    const sniffed = sniffFileType(sample);
+    let verifiedType: string;
+
+    if (kind === 'cover' || kind === 'avatar') {
+      if (!sniffed || !allowed.includes(sniffed)) {
+        return NextResponse.json(
+          { error: 'File content does not match an allowed image format.' },
+          { status: 400 }
+        );
+      }
+      verifiedType = sniffed;
+    } else if (file.type === 'text/plain') {
+      if (sniffed || !looksLikeText(sample)) {
+        return NextResponse.json(
+          { error: 'File content does not look like plain text.' },
+          { status: 400 }
+        );
+      }
+      verifiedType = 'text/plain';
+    } else {
+      if (!sniffed || sniffed !== file.type) {
+        return NextResponse.json(
+          { error: 'File content does not match the declared file type.' },
+          { status: 400 }
+        );
+      }
+      verifiedType = sniffed;
+    }
+
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
       return NextResponse.json(
         {
@@ -100,7 +172,7 @@ export async function POST(req: NextRequest) {
 
     const blob = await put(path, file, {
       access: 'public',
-      contentType: file.type,
+      contentType: verifiedType,
     });
 
     return NextResponse.json({
