@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { hashPassword, createToken, setSessionCookie } from '@/lib/auth';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { z } from 'zod';
 
 const signupSchema = z.object({
@@ -12,6 +13,14 @@ const signupSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  const limit = rateLimit(`signup:${getClientIp(req)}`, 5, 60 * 60 * 1000);
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: 'Too many signup attempts. Please try again later.' },
+      { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } }
+    );
+  }
+
   try {
     const body = await req.json();
     const data = signupSchema.parse(body);

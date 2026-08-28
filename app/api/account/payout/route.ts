@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
+import { encryptPII } from '@/lib/crypto';
 import { z } from 'zod';
 
 const schema = z.object({
@@ -20,15 +21,17 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json();
     const data = schema.parse(body);
 
+    const encrypt = (value: string | null | undefined) => (value ? encryptPII(value) : null);
+
     await prisma.user.update({
       where: { id: me.id },
       data: {
         payoutMethod: data.payoutMethod,
-        payoutUpi: data.payoutMethod === 'UPI' ? (data.payoutUpi || null) : null,
-        payoutBankName: data.payoutMethod === 'BANK' ? (data.payoutBankName || null) : null,
-        payoutBankAccount: data.payoutMethod === 'BANK' ? (data.payoutBankAccount || null) : null,
-        payoutBankIfsc: data.payoutMethod === 'BANK' ? (data.payoutBankIfsc || null) : null,
-        payoutPanNumber: data.payoutPanNumber || null,
+        payoutUpi: data.payoutMethod === 'UPI' ? encrypt(data.payoutUpi) : null,
+        payoutBankName: data.payoutMethod === 'BANK' ? encrypt(data.payoutBankName) : null,
+        payoutBankAccount: data.payoutMethod === 'BANK' ? encrypt(data.payoutBankAccount) : null,
+        payoutBankIfsc: data.payoutMethod === 'BANK' ? encrypt(data.payoutBankIfsc) : null,
+        payoutPanNumber: encrypt(data.payoutPanNumber),
       },
     });
 

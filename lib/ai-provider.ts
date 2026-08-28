@@ -1,7 +1,16 @@
-// Universal AI provider — works with both Anthropic Claude and OpenAI GPT
-// Switch by setting AI_PROVIDER="anthropic" or "openai" in .env
+// Universal AI provider — works with Anthropic Claude, OpenAI GPT, and any
+// OpenAI-compatible endpoint (Groq, OpenRouter, Google AI Studio, Together,
+// self-hosted Ollama/vLLM, etc.)
+//
+// Switch by setting AI_PROVIDER in .env:
+//   "anthropic" — Anthropic Claude (ANTHROPIC_API_KEY)
+//   "openai"    — OpenAI (OPENAI_API_KEY)
+//   "custom"    — any OpenAI-compatible API:
+//                   AI_BASE_URL  e.g. https://api.groq.com/openai/v1
+//                   AI_API_KEY   the provider's key (free tiers work)
+//                   AI_MODEL     e.g. llama-3.3-70b-versatile
 
-export type AIProvider = 'anthropic' | 'openai';
+export type AIProvider = 'anthropic' | 'openai' | 'custom';
 
 export interface AIMessage {
   role: 'system' | 'user' | 'assistant';
@@ -31,7 +40,43 @@ const COSTS = {
 
 export async function callAI(opts: AICallOptions): Promise<AIResponse> {
   if (PROVIDER === 'anthropic') return callAnthropic(opts);
+  if (PROVIDER === 'custom') return callOpenAICompatible(opts);
   return callOpenAI(opts);
+}
+
+// Any OpenAI-compatible endpoint: Groq, OpenRouter, Google AI Studio,
+// Together, DeepInfra, or a self-hosted Ollama/vLLM server.
+// Cost is reported as 0 — free tiers / self-hosted have no per-token bill.
+async function callOpenAICompatible(opts: AICallOptions): Promise<AIResponse> {
+  const baseUrl = (process.env.AI_BASE_URL || '').replace(/\/$/, '');
+  const apiKey = process.env.AI_API_KEY;
+  if (!baseUrl) return mockResponse(opts);
+
+  const res = await fetch(`${baseUrl}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      // Ollama and some local servers accept requests without a key
+      ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+    },
+    body: JSON.stringify({
+      model: opts.model || process.env.AI_MODEL || 'llama-3.3-70b-versatile',
+      messages: opts.messages,
+      temperature: opts.temperature ?? 0.7,
+      max_tokens: opts.maxTokens || 4096,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`AI provider error (${baseUrl}): ${err}`);
+  }
+
+  const data = await res.json();
+  const text = data.choices?.[0]?.message?.content || '';
+  const tokensUsed = data.usage?.total_tokens || 0;
+
+  return { text, tokensUsed, costINR: 0 };
 }
 
 async function callAnthropic(opts: AICallOptions): Promise<AIResponse> {

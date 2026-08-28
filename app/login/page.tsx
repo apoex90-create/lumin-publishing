@@ -114,12 +114,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 p-4 bg-cream-100 rounded-xl text-xs text-ink-900/70 font-mono">
-            <p className="font-semibold mb-2 text-royal-800">Demo credentials (after seeding):</p>
-            <p>Author: author@lumin.demo / demo1234</p>
-            <p>Admin: admin@lumin.demo / demo1234</p>
-          </div>
-
           <p className="mt-6 text-center text-sm text-ink-900/60">
             New to LUMIN?{' '}
             <Link href="/signup" className="text-royal-800 hover:text-gold-600 font-semibold underline">

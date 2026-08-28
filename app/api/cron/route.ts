@@ -5,8 +5,14 @@ import { prisma } from '@/lib/db';
 // Triggered by Vercel cron or external cron service every minute
 // Processes up to 5 jobs per invocation to stay within Vercel's 10-second limit
 export async function GET(req: NextRequest) {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    console.error('[cron] CRON_SECRET is not set — refusing to run. Set CRON_SECRET to enable the agent cron job.');
+    return NextResponse.json({ error: 'Cron is not configured' }, { status: 503 });
+  }
+
   const authHeader = req.headers.get('authorization');
-  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

@@ -14,17 +14,20 @@ const iconMap: Record<string, any> = {
   github: Github,
 };
 
+type FooterLinkRow = Awaited<ReturnType<typeof prisma.footerLink.findMany>>[number];
+type SocialLinkRow = Awaited<ReturnType<typeof prisma.socialLink.findMany>>[number];
+
 export default async function Footer() {
   const [footerLinks, socialLinks, settings] = await Promise.all([
     prisma.footerLink.findMany({
       where: { isPublished: true },
       orderBy: [{ section: 'asc' }, { sortOrder: 'asc' }],
-    }).catch(() => []),
+    }).catch((): FooterLinkRow[] => []),
     prisma.socialLink.findMany({
       where: { isPublished: true },
       orderBy: { sortOrder: 'asc' },
-    }).catch(() => []),
-    getSettings(['brand.name', 'brand.description']).catch(() => ({})),
+    }).catch((): SocialLinkRow[] => []),
+    getSettings(['brand.name', 'brand.description']).catch((): Record<string, string> => ({})),
   ]);
 
   const brandName = settings['brand.name'] || DEFAULT_SETTINGS['brand.name'];

@@ -67,6 +67,12 @@ enum ApprovalStatus {
   REJECTED
 }
 
+enum PaymentOrderStatus {
+  CREATED
+  PAID
+  FAILED
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -82,7 +88,15 @@ model User {
   // Onboarding
   onboardingCompleted Boolean @default(false)
 
-  // Payout details (stored encrypted in production)
+  // Email verification
+  emailVerified       Boolean  @default(false)
+  emailVerifyToken    String?  @unique
+
+  // Password reset (token is a random hex string, cleared after use)
+  passwordResetToken  String?  @unique
+  passwordResetExpiry DateTime?
+
+  // Payout details — encrypted at rest via lib/crypto.ts (AES-256-GCM), see PII_ENCRYPTION_KEY
   payoutMethod    String?  // 'UPI' | 'BANK'
   payoutUpi       String?
   payoutBankName  String?
@@ -97,6 +111,7 @@ model User {
   transactions Transaction[]
   approvals    Approval[]
   emails       EmailLog[]
+  paymentOrders PaymentOrder[]
 }
 
 model Book {
@@ -141,6 +156,7 @@ model Book {
 
   sales        Sale[]
   jobs         Job[]
+  paymentOrders PaymentOrder[]
 
   @@index([authorId])
   @@index([status])
@@ -173,6 +189,23 @@ model Transaction {
   approvalId String?    @unique
   approval   Approval?  @relation(fields: [approvalId], references: [id])
 
+  @@index([userId])
+}
+
+model PaymentOrder {
+  id              String             @id @default(cuid())
+  bookId          String
+  book            Book               @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  razorpayOrderId String             @unique
+  amount          Float
+  currency        String             @default("INR")
+  status          PaymentOrderStatus @default(CREATED)
+  createdAt       DateTime           @default(now())
+  paidAt          DateTime?
+
+  @@index([bookId])
   @@index([userId])
 }
 
@@ -386,7 +419,7 @@ model SocialLink {
 
 model Plan {
   id             String   @id @default(cuid())
-  tier           String   @unique // 'STARTER' | 'PROFESSIONAL' | 'BESTSELLER'
+  tier           PlanTier @unique
   name           String
   tagline        String
   priceINR       Float

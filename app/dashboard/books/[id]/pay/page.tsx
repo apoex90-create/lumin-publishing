@@ -4,6 +4,7 @@ import { ArrowLeft, CreditCard, ShieldCheck } from 'lucide-react';
 import { prisma } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
 import { PLANS } from '@/lib/plans';
+import { getPlanPriceForBook, isBookReadyForSubmission } from '@/lib/payments';
 import PayButton from '@/components/dashboard/PayButton';
 
 export const dynamic = 'force-dynamic';
@@ -16,8 +17,11 @@ export default async function PayPage({ params }: { params: Promise<{ id: string
   const book = await prisma.book.findUnique({ where: { id } });
   if (!book) notFound();
   if (book.authorId !== me.id) redirect('/dashboard/books');
+  if (book.status !== 'DRAFT') redirect(`/dashboard/books/${book.id}`);
 
-  const plan = PLANS.find((p) => p.id === book.planTier) || PLANS[0];
+  const planMeta = PLANS.find((p) => p.id === book.planTier) || PLANS[0];
+  const { priceINR } = await getPlanPriceForBook(book.planTier);
+  const ready = isBookReadyForSubmission(book);
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -47,15 +51,15 @@ export default async function PayPage({ params }: { params: Promise<{ id: string
         <div className="space-y-3 mb-6">
           <div className="flex justify-between items-center">
             <span className="text-sm text-ink-900/70">Plan</span>
-            <span className="font-display text-lg text-royal-900">{plan.name}</span>
+            <span className="font-display text-lg text-royal-900">{planMeta.name}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-sm text-ink-900/70">Tagline</span>
-            <span className="text-sm text-ink-900/70 italic">{plan.tagline}</span>
+            <span className="text-sm text-ink-900/70 italic">{planMeta.tagline}</span>
           </div>
           <div className="flex justify-between items-center pt-3 border-t border-royal-100">
             <span className="font-display text-lg text-royal-900">Total (one-time)</span>
-            <span className="font-display text-3xl text-gold-gradient">₹{plan.priceINR.toLocaleString('en-IN')}</span>
+            <span className="font-display text-3xl text-gold-gradient">₹{priceINR.toLocaleString('en-IN')}</span>
           </div>
         </div>
 
@@ -66,7 +70,14 @@ export default async function PayPage({ params }: { params: Promise<{ id: string
           </div>
         </div>
 
-        <PayButton bookId={book.id} amount={plan.priceINR} currency="INR" />
+        {ready ? (
+          <PayButton bookId={book.id} amount={priceINR} currency="INR" />
+        ) : (
+          <div className="p-4 rounded-xl bg-burgundy-50 border border-burgundy-200 text-sm text-burgundy-800">
+            Please complete your manuscript upload, title and description before paying.{' '}
+            <Link href={`/dashboard/books/${book.id}/edit`} className="underline font-medium">Finish your book details</Link>
+          </div>
+        )}
       </div>
 
       <div className="text-center">

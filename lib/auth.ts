@@ -3,7 +3,22 @@ import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 import { prisma } from './db';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
+function resolveJwtSecret(): string {
+  if (process.env.JWT_SECRET) return process.env.JWT_SECRET;
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('JWT_SECRET environment variable must be set in production.');
+  }
+  console.warn('[lumin] JWT_SECRET is not set — using an insecure development-only default. Set JWT_SECRET before deploying.');
+  return 'dev-secret-change-me';
+}
+
+let cachedSecret: string | null = null;
+
+function getJwtSecret(): string {
+  if (!cachedSecret) cachedSecret = resolveJwtSecret();
+  return cachedSecret;
+}
+
 const COOKIE_NAME = 'lumin_session';
 
 export interface JWTPayload {
@@ -21,12 +36,12 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 }
 
 export function createToken(payload: JWTPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: '7d' });
 }
 
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as JWTPayload;
+    return jwt.verify(token, getJwtSecret()) as JWTPayload;
   } catch {
     return null;
   }
