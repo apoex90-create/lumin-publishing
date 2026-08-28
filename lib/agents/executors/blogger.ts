@@ -51,7 +51,8 @@ async function writeBlogPost(payload: any) {
           excerpt: parsed.excerpt,
           content: parsed.content,
           category: parsed.category || 'Writing Tips',
-          tags: parsed.tags || '',
+          // AI may return tags as an array; the column is a String
+          tags: Array.isArray(parsed.tags) ? JSON.stringify(parsed.tags) : (parsed.tags || ''),
           publishedAt: new Date(),
           authorBot: 'BLOGGER',
         },

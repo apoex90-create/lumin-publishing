@@ -31,6 +31,15 @@ async function orchestrateBook(payload: any, bookId: string | null) {
         bookId,
         payload: { template: 'book_submitted', userId: book.authorId },
       });
+      // Chain the next pipeline step immediately — without this the book
+      // sits in IN_REVIEW until the next daily sweep (up to 23 hours)
+      await enqueueJob({
+        agentType: 'ORCHESTRATOR',
+        jobType: 'orchestrate_book',
+        bookId,
+        payload: {},
+        priority: 3,
+      });
       decisions.push('Moved to IN_REVIEW + sent confirmation email');
       break;
 
